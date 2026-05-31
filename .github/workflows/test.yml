@@ -1,0 +1,74 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  detect-language:
+    runs-on: ubuntu-latest
+    outputs:
+      language: ${{ steps.read.outputs.language }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve LANGUAGE (.env local override, else committed .env.example)
+        id: read
+        run: |
+          # .env is git-ignored, so CI never sees it — the committed .env.example
+          # is the source of truth here. Check .env first anyway (a repo that
+          # chooses to commit one wins), then fall back to .env.example, then
+          # python. This mirrors the Makefile's -include order so CI and local
+          # resolve the same language.
+          LANG="python"
+          for f in .env .env.example; do
+            [ -f "$f" ] || continue
+            VAL=$(grep -E '^LANGUAGE=' "$f" | head -n1 | cut -d= -f2- | tr -d '"' | tr -d "'" | xargs)
+            if [ -n "$VAL" ]; then
+              LANG=$(echo "$VAL" | tr '[:upper:]' '[:lower:]')
+              break
+            fi
+          done
+          echo "language=$LANG" >> "$GITHUB_OUTPUT"
+          echo "Detected LANGUAGE=$LANG"
+
+  validate-python:
+    needs: detect-language
+    if: needs.detect-language.outputs.language == 'python'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: make install
+      - run: make validate
+
+  validate-r:
+    needs: detect-language
+    if: needs.detect-language.outputs.language == 'r'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "release"
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::testthat
+            any::renv
+      - run: make install
+      - run: make validate
+
+  unsupported:
+    needs: detect-language
+    if: needs.detect-language.outputs.language != 'python' && needs.detect-language.outputs.language != 'r'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report unsupported language
+        run: |
+          echo "::warning::CI does not have a built-in workflow for LANGUAGE=${{ needs.detect-language.outputs.language }}."
+          echo "Add a job to .github/workflows/test.yml or document that CI is opt-out for this language."
+          echo "This step passes so the job does not block; remove it once you have proper CI for your language."

@@ -1,0 +1,27 @@
+# Project configuration for LANGUAGE=python (see .env).
+# For LANGUAGE=r, replace this file with renv.lock + a DESCRIPTION file.
+
+[project]
+name = "your-project"
+version = "0.1.0"
+description = "A research project scaffolded from agentic-research-template."
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88

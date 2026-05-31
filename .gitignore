@@ -1,0 +1,33 @@
+# Generated agent adapters — produced by `make sync`, never committed.
+# A file never committed cannot drift in history.
+.claude/
+.opencode/
+.agents/
+
+# Secrets and OS files
+.env
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# R
+renv/
+.Rhistory
+.RData
+
+# Paper build artifacts
+paper/output.pdf
+paper/*.aux
+paper/*.log
+
+# Editors
+.vscode/
+.idea/
